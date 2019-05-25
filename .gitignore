@@ -78,3 +78,6 @@ Dependencies/
 nbproject/
 .tx/
 /makefile
+*cmake*
+git_version.h
+openxcom.app
