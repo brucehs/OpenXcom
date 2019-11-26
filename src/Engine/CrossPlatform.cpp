@@ -96,7 +96,7 @@ void getErrorDialog()
 		if (getenv("KDE_SESSION_UID") && system("which kdialog 2>&1 > /dev/null") == 0)
 			errorDlg = "kdialog --error ";
 		else if (system("which zenity 2>&1 > /dev/null") == 0)
-			errorDlg = "zenity --error --text=";
+			errorDlg = "zenity --no-wrap --error --text=";
 		else if (system("which kdialog 2>&1 > /dev/null") == 0)
 			errorDlg = "kdialog --error ";
 		else if (system("which gdialog 2>&1 > /dev/null") == 0)
@@ -210,9 +210,11 @@ std::vector<std::string> findDataFolders()
  	list.push_back(path);
 
 	// Get global data folders
-	if (char *xdg_data_dirs = getenv("XDG_DATA_DIRS"))
+	if (char const *const xdg_data_dirs = getenv("XDG_DATA_DIRS"))
 	{
-		char *dir = strtok(xdg_data_dirs, ":");
+		char xdg_data_dirs_copy[strlen(xdg_data_dirs)+1];
+		strcpy(xdg_data_dirs_copy, xdg_data_dirs);
+		char *dir = strtok(xdg_data_dirs_copy, ":");
 		while (dir != 0)
 		{
 			snprintf(path, MAXPATHLEN, "%s/openxcom/", dir);
@@ -470,8 +472,9 @@ std::vector<std::string> getFolderContents(const std::string &path, const std::s
 	{
 		std::string file = dirp->d_name;
 
-		if (file == "." || file == "..")
+		if (!file.empty() && file[0] == '.')
 		{
+			//skip ".", "..", ".git", ".svn", ".bashrc", ".ssh" etc.
 			continue;
 		}
 		if (!compareExt(file, ext))
@@ -1041,6 +1044,8 @@ void stackTrace(void *ctx)
 #else
 	Log(LOG_FATAL) << "Unfortunately, no stack trace information is available";
 #endif
+#elif __CYGWIN__
+	Log(LOG_FATAL) << "Unfortunately, no stack trace information is available";
 #else
 	void *frames[32];
 	char buf[1024];

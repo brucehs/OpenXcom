@@ -72,6 +72,8 @@ public:
 	virtual std::string getDefaultName(Language *lang) const;
 	/// Gets the target's marker name.
 	virtual std::string getMarkerName() const;
+	/// Gets the target's marker ID.
+	virtual int getMarkerId() const;
 	/// Gets the target's marker sprite.
 	virtual int getMarker() const = 0;
 	/// Gets the target's followers.
@@ -79,7 +81,9 @@ public:
 	/// Gets the target's craft followers.
 	std::vector<Craft*> getCraftFollowers() const;
 	/// Gets the distance to another target.
-	double getDistance(const Target *target) const;
+	double getDistance(const Target *target) const { return getDistance(target->getLongitude(), target->getLatitude()); }
+	/// Gets the distance to another position.
+	double getDistance(double lon, double lat) const;
 };
 
 }

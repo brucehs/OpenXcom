@@ -202,6 +202,15 @@ std::string Target::getMarkerName() const
 }
 
 /**
+ * Returns the marker ID on the globe for the target.
+ * @return Marker ID.
+ */
+int Target::getMarkerId() const
+{
+	return _id;
+}
+
+/**
  * Returns the list of targets currently
  * following this target.
  * @return Pointer to list of targets.
@@ -233,12 +242,15 @@ std::vector<Craft*> Target::getCraftFollowers() const
 /**
  * Returns the great circle distance to another
  * target on the globe.
- * @param target Pointer to other target.
+ * @param lon Longitude.
+ * @param lat Latitude.
  * @returns Distance in radian.
  */
-double Target::getDistance(const Target *target) const
+double Target::getDistance(double lon, double lat) const
 {
-	return acos(cos(_lat) * cos(target->getLatitude()) * cos(target->getLongitude() - _lon) + sin(_lat) * sin(target->getLatitude()));
+	if (AreSame(lon, _lon) && AreSame(lat, _lat))
+		return 0.0;
+	return acos(cos(_lat) * cos(lat) * cos(lon - _lon) + sin(_lat) * sin(lat));
 }
 
 }

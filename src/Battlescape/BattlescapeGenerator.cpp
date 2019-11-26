@@ -404,7 +404,7 @@ void BattlescapeGenerator::nextStage()
 	// rebuild it with only the items we want to keep active in battle for the next stage
 	// here we add all the items that our soldiers are carrying, and we'll add the items on the
 	// inventory tile after we've generated our map. everything else will either be in one of the
-	// recovery arrays, or deleted from existance at this point.
+	// recovery arrays, or deleted from existence at this point.
 	for (std::vector<BattleItem*>::iterator i = carryToNextStage.begin(); i != carryToNextStage.end();++i)
 	{
 		_save->getItems()->push_back(*i);
@@ -737,7 +737,7 @@ void BattlescapeGenerator::deployXCOM()
 			{
 				// only put items in the battlescape that make sense (when the item got a sprite, it's probably ok)
 				RuleItem *rule = _game->getMod()->getItem(i->first, true);
-				if (rule->getBigSprite() > -1 && rule->getBattleType() != BT_NONE && rule->getBattleType() != BT_CORPSE && !rule->isFixed() && _game->getSavedGame()->isResearched(rule->getRequirements()))
+				if (rule->canBeEquippedBeforeBaseDefense() && rule->getBigSprite() > -1 && rule->getBattleType() != BT_NONE && rule->getBattleType() != BT_CORPSE && !rule->isFixed() && _game->getSavedGame()->isResearched(rule->getRequirements()))
 				{
 					for (int count = 0; count < i->second; count++)
 					{
@@ -1614,6 +1614,12 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, RuleTe
 
 	if (z > (_save->getMapSizeZ()-1))
 	{
+		if (_save->getMissionType() == "STR_BASE_DEFENSE")
+		{
+			// we'll already have gone through _base->isOverlappingOrOverflowing() by the time we hit this, possibly multiple times
+			// let's just throw an exception and tell them to check the log, it'll have all the detail they'll need.
+			throw Exception("Something is wrong with your base, check your log file for additional information.");
+		}
 		throw Exception("Something is wrong in your map definitions, craft/ufo map is too tall?");
 	}
 
@@ -2021,11 +2027,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script)
 
 	for (std::vector<MapDataSet*>::iterator i = _terrain->getMapDataSets()->begin(); i != _terrain->getMapDataSets()->end(); ++i)
 	{
-		(*i)->loadData();
-		if (_game->getMod()->getMCDPatch((*i)->getName()))
-		{
-			_game->getMod()->getMCDPatch((*i)->getName())->modifyData(*i);
-		}
+		(*i)->loadData(_game->getMod()->getMCDPatch((*i)->getName()));
 		_save->getMapDataSets()->push_back(*i);
 		mapDataSetIDOffset++;
 	}
@@ -2268,11 +2270,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script)
 	{
 		for (std::vector<MapDataSet*>::iterator i = ufoTerrain->getMapDataSets()->begin(); i != ufoTerrain->getMapDataSets()->end(); ++i)
 		{
-			(*i)->loadData();
-			if (_game->getMod()->getMCDPatch((*i)->getName()))
-			{
-				_game->getMod()->getMCDPatch((*i)->getName())->modifyData(*i);
-			}
+			(*i)->loadData(_game->getMod()->getMCDPatch((*i)->getName()));
 			_save->getMapDataSets()->push_back(*i);
 			craftDataSetIDOffset++;
 		}
@@ -2295,11 +2293,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script)
 	{
 		for (std::vector<MapDataSet*>::iterator i = _craft->getRules()->getBattlescapeTerrainData()->getMapDataSets()->begin(); i != _craft->getRules()->getBattlescapeTerrainData()->getMapDataSets()->end(); ++i)
 		{
-			(*i)->loadData();
-			if (_game->getMod()->getMCDPatch((*i)->getName()))
-			{
-				_game->getMod()->getMCDPatch((*i)->getName())->modifyData(*i);
-			}
+			(*i)->loadData(_game->getMod()->getMCDPatch((*i)->getName()));
 			_save->getMapDataSets()->push_back(*i);
 		}
 		loadMAP(craftMap, _craftPos.x * 10, _craftPos.y * 10, _craft->getRules()->getBattlescapeTerrainData(), mapDataSetIDOffset + craftDataSetIDOffset, true, true);
@@ -2378,10 +2372,9 @@ void BattlescapeGenerator::generateBaseMap()
 					if ((*i)->getRules()->getStorage() > 0)
 					{
 						int groundLevel;
-						for (groundLevel = _mapsize_z -1; groundLevel >= 0; --groundLevel)
+						for (groundLevel = _mapsize_z - 1; groundLevel >= 0; --groundLevel)
 						{
-							if (!_save->getTile(Position(x*10, y*10, groundLevel))->hasNoFloor(0))
-
+							if (!_save->getTile(Position(x * 10, y * 10, groundLevel))->hasNoFloor(0))
 								break;
 						}
 						// general stores - there is where the items are put
@@ -2390,11 +2383,11 @@ void BattlescapeGenerator::generateBaseMap()
 							for (int l = y * 10; l != (y + 1) * 10; ++l)
 							{
 								// we only want every other tile, giving us a "checkerboard" pattern
-								if ((k+l) % 2 == 0)
+								if ((k + l) % 2 == 0)
 								{
-									Tile *t = _save->getTile(Position(k,l,groundLevel));
-									Tile *tEast = _save->getTile(Position(k+1,l,groundLevel));
-									Tile *tSouth = _save->getTile(Position(k,l+1,groundLevel));
+									Tile *t = _save->getTile(Position(k, l, groundLevel));
+									Tile *tEast = _save->getTile(Position(k + 1, l, groundLevel));
+									Tile *tSouth = _save->getTile(Position(k, l + 1, groundLevel));
 									if (t && t->getMapData(O_FLOOR) && !t->getMapData(O_OBJECT) &&
 										tEast && !tEast->getMapData(O_WESTWALL) &&
 										tSouth && !tSouth->getMapData(O_NORTHWALL))
@@ -2407,7 +2400,7 @@ void BattlescapeGenerator::generateBaseMap()
 						// let's put the inventory tile on the lower floor, just to be safe.
 						if (!_craftInventoryTile)
 						{
-							_craftInventoryTile = _save->getTile(Position((x*10)+5,(y*10)+5,groundLevel-1));
+							_craftInventoryTile = _save->getTile(Position((x * 10) + 5, (y * 10) + 5, groundLevel - 1));
 						}
 					}
 				}
@@ -2811,7 +2804,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 							tile->setMapData(0, -1, -1, O_OBJECT);
 							if (floor)
 							{
-								md = _terrain->getMapDataSets()->at(floor->set)->getObjects()->at(floor->entry);
+								md = _terrain->getMapDataSets()->at(floor->set)->getObject(floor->entry);
 								tile->setMapData(md, floor->entry, floor->set, O_FLOOR);
 							}
 
@@ -2827,7 +2820,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 
 					if (nWall)
 					{
-						md = _terrain->getMapDataSets()->at(nWall->set)->getObjects()->at(nWall->entry);
+						md = _terrain->getMapDataSets()->at(nWall->set)->getObject(nWall->entry);
 						tile = _save->getTile(Position((i*10)+9, (j*10)+rect.y, data->level));
 						tile->setMapData(md, nWall->entry, nWall->set, O_NORTHWALL);
 						tile = _save->getTile(Position((i*10)+9, (j*10)+rect.y+rect.h, data->level));
@@ -2836,7 +2829,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 
 					if (corner)
 					{
-						md = _terrain->getMapDataSets()->at(corner->set)->getObjects()->at(corner->entry);
+						md = _terrain->getMapDataSets()->at(corner->set)->getObject(corner->entry);
 						tile = _save->getTile(Position((i+1)*10, (j*10)+rect.y, data->level));
 						if (tile->getMapData(O_NORTHWALL) == 0)
 							tile->setMapData(md, corner->entry, corner->set, O_NORTHWALL);
@@ -2859,7 +2852,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 							tile->setMapData(0, -1, -1, O_OBJECT);
 							if (floor)
 							{
-								md = _terrain->getMapDataSets()->at(floor->set)->getObjects()->at(floor->entry);
+								md = _terrain->getMapDataSets()->at(floor->set)->getObject(floor->entry);
 								tile->setMapData(md, floor->entry, floor->set, O_FLOOR);
 							}
 
@@ -2875,7 +2868,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 
 					if (wWall)
 					{
-						md = _terrain->getMapDataSets()->at(wWall->set)->getObjects()->at(wWall->entry);
+						md = _terrain->getMapDataSets()->at(wWall->set)->getObject(wWall->entry);
 						Tile *tile = _save->getTile(Position((i*10)+rect.x, (j*10)+9, data->level));
 						tile->setMapData(md, wWall->entry, wWall->set, O_WESTWALL);
 						tile = _save->getTile(Position((i*10)+rect.x+rect.w, (j*10)+9, data->level));
@@ -2884,7 +2877,7 @@ void BattlescapeGenerator::drillModules(TunnelData* data, const std::vector<SDL_
 
 					if (corner)
 					{
-						md = _terrain->getMapDataSets()->at(corner->set)->getObjects()->at(corner->entry);
+						md = _terrain->getMapDataSets()->at(corner->set)->getObject(corner->entry);
 						Tile *tile = _save->getTile(Position((i*10)+rect.x, (j+1)*10, data->level));
 						if (tile->getMapData(O_WESTWALL) == 0)
 							tile->setMapData(md, corner->entry, corner->set, O_WESTWALL);

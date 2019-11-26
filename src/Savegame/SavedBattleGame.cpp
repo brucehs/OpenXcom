@@ -344,11 +344,7 @@ void SavedBattleGame::loadMapResources(Mod *mod)
 {
 	for (std::vector<MapDataSet*>::const_iterator i = _mapDataSets.begin(); i != _mapDataSets.end(); ++i)
 	{
-		(*i)->loadData();
-		if (mod->getMCDPatch((*i)->getName()))
-		{
-			mod->getMCDPatch((*i)->getName())->modifyData(*i);
-		}
+		(*i)->loadData(mod->getMCDPatch((*i)->getName()));
 	}
 
 	int mdsID, mdID;
@@ -361,7 +357,7 @@ void SavedBattleGame::loadMapResources(Mod *mod)
 			_tiles[i]->getMapData(&mdID, &mdsID, tp);
 			if (mdID != -1 && mdsID != -1)
 			{
-				_tiles[i]->setMapData(_mapDataSets[mdsID]->getObjects()->at(mdID), mdID, mdsID, tp);
+				_tiles[i]->setMapData(_mapDataSets[mdsID]->getObject(mdID), mdID, mdsID, tp);
 			}
 		}
 	}
@@ -1929,7 +1925,7 @@ int SavedBattleGame::getAmbientSound() const
 
 /**
  * get the list of items we're guaranteed to take with us (ie: items that were in the skyranger)
- * @return the list of items we're garaunteed.
+ * @return the list of items we're guaranteed.
  */
 std::vector<BattleItem*> *SavedBattleGame::getGuaranteedRecoveredItems()
 {

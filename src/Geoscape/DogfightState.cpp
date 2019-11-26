@@ -505,7 +505,8 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo) : _st
 	if (!_ufo->getEscapeCountdown())
 	{
 		_ufo->setFireCountdown(0);
-		_ufo->setEscapeCountdown(_ufo->getRules()->getBreakOffTime() + RNG::generate(0, _ufo->getRules()->getBreakOffTime()) - 30 * _game->getSavedGame()->getDifficultyCoefficient());
+		int escapeCountdown = _ufo->getRules()->getBreakOffTime() + RNG::generate(0, _ufo->getRules()->getBreakOffTime()) - 30 * _game->getSavedGame()->getDifficultyCoefficient();
+		_ufo->setEscapeCountdown(std::max(1, escapeCountdown));
 	}
 
 	// technically this block is redundant, but i figure better to initialize the variables as SOMETHING
@@ -748,7 +749,7 @@ void DogfightState::update()
 			_ufo->setInterceptionProcessed(true);
 			int escapeCounter = _ufo->getEscapeCountdown();
 
-			if (escapeCounter > 0 )
+			if (escapeCounter > 0)
 			{
 				escapeCounter--;
 				_ufo->setEscapeCountdown(escapeCounter);
@@ -838,6 +839,7 @@ void DogfightState::update()
 						{
 							_ufo->setShotDownByCraftId(_craft->getUniqueId());
 							_ufo->setSpeed(0);
+							_ufo->setDestination(0);
 							// if the ufo got destroyed here, these no longer apply
 							_ufoBreakingOff = false;
 							finalRun = false;

@@ -1203,7 +1203,7 @@ BattleUnit *TileEngine::hit(Position center, int power, ItemDamageType type, Bat
  * @param center Center of the explosion in voxelspace.
  * @param power Power of the explosion.
  * @param type The damage type of the explosion.
- * @param maxRadius The maximum radius othe explosion.
+ * @param maxRadius The maximum radius of the explosion.
  * @param unit The unit that caused the explosion.
  */
 void TileEngine::explode(Position center, int power, ItemDamageType type, int maxRadius, BattleUnit *unit)
@@ -1551,7 +1551,7 @@ bool TileEngine::detonate(Tile* tile)
 			//this trick is to follow transformed object parts (object can become a ground)
 			diemcd = tiles[i]->getMapData(currentpart)->getDieMCD();
 			if (diemcd!=0)
-				currentpart2 = tiles[i]->getMapData(currentpart)->getDataset()->getObjects()->at(diemcd)->getObjectType();
+				currentpart2 = tiles[i]->getMapData(currentpart)->getDataset()->getObject(diemcd)->getObjectType();
 			else
 				currentpart2 = currentpart;
 			if (tiles[i]->destroy(currentpart, _save->getObjectiveType()))

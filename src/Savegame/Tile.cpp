@@ -339,14 +339,16 @@ int Tile::openDoor(TilePart part, BattleUnit *unit, BattleActionType reserve)
 {
 	if (!_objects[part]) return -1;
 
-	if (_objects[part]->isDoor() && unit->getArmor()->getSize() == 1) // don't allow double-wide units to open swinging doors due to engine limitations
+	if (_objects[part]->isDoor())
 	{
+		if (unit && unit->getArmor()->getSize() > 1) // don't allow double-wide units to open swinging doors due to engine limitations
+			return -1;
 		if (unit && unit->getTimeUnits() < _objects[part]->getTUCost(unit->getMovementType()) + unit->getActionTUs(reserve, unit->getMainHandWeapon(false)))
 			return 4;
 		if (_unit && _unit != unit && _unit->getPosition() != getPosition())
 			return -1;
-		setMapData(_objects[part]->getDataset()->getObjects()->at(_objects[part]->getAltMCD()), _objects[part]->getAltMCD(), _mapDataSetID[part],
-				   _objects[part]->getDataset()->getObjects()->at(_objects[part]->getAltMCD())->getObjectType());
+		setMapData(_objects[part]->getDataset()->getObject(_objects[part]->getAltMCD()), _objects[part]->getAltMCD(), _mapDataSetID[part],
+				   _objects[part]->getDataset()->getObject(_objects[part]->getAltMCD())->getObjectType());
 		setMapData(0, -1, -1, part);
 		return 0;
 	}
@@ -474,7 +476,7 @@ bool Tile::destroy(TilePart part, SpecialTileType type)
 		setMapData(0, -1, -1, part);
 		if (originalPart->getDieMCD())
 		{
-			MapData *dead = originalPart->getDataset()->getObjects()->at(originalPart->getDieMCD());
+			MapData *dead = originalPart->getDataset()->getObject(originalPart->getDieMCD());
 			setMapData(dead, originalPart->getDieMCD(), originalMapDataSetID, dead->getObjectType());
 		}
 		if (originalPart->getExplosive())

@@ -879,20 +879,21 @@ void GeoscapeState::time5Seconds()
 							continue;
 						}
 						// Can we actually fight it
-						if (!(*j)->isInDogfight() && !(*j)->getDistance(u))
+						if (!(*j)->isInDogfight() && u->getSpeed() <= (*j)->getRules()->getMaxSpeed())
 						{
-							_dogfightsToBeStarted.push_back(new DogfightState(this, (*j), u));
+							DogfightState *dogfight = new DogfightState(this, (*j), u);
+							_dogfightsToBeStarted.push_back(dogfight);
 							if ((*j)->getRules()->isWaterOnly() && u->getAltitudeInt() > (*j)->getRules()->getMaxAltitude())
 							{
 								popup(new DogfightErrorState((*j), tr("STR_UNABLE_TO_ENGAGE_DEPTH")));
-								_dogfightsToBeStarted.back()->setMinimized(true);
-								_dogfightsToBeStarted.back()->setWaitForAltitude(true);
+								dogfight->setMinimized(true);
+								dogfight->setWaitForAltitude(true);
 							}
 							else if ((*j)->getRules()->isWaterOnly() && !_globe->insideLand((*j)->getLongitude(), (*j)->getLatitude()))
 							{
 								popup(new DogfightErrorState((*j), tr("STR_UNABLE_TO_ENGAGE_AIRBORNE")));
-								_dogfightsToBeStarted.back()->setMinimized(true);
-								_dogfightsToBeStarted.back()->setWaitForPoly(true);
+								dogfight->setMinimized(true);
+								dogfight->setWaitForPoly(true);
 							}
 							if (!_dogfightStartTimer->isRunning())
 							{
@@ -938,7 +939,10 @@ void GeoscapeState::time5Seconds()
 						// look up polygons texture
 						int texture, shade;
 						_globe->getPolygonTextureAndShade(m->getLongitude(), m->getLatitude(), &texture, &shade);
-						texture = m->getTexture();
+						if (_game->getMod()->getGlobe()->getTexture(m->getTexture()) != 0)
+						{
+							texture = m->getTexture();
+						}
 						timerReset();
 						popup(new ConfirmLandingState(*j, _game->getMod()->getGlobe()->getTexture(texture), shade));
 					}

@@ -152,6 +152,11 @@ void MovingTarget::setSpeed(int speed)
 {
 	_speed = speed;
 	_speedRadian = calculateRadianSpeed(_speed);
+	// Recalculate meeting point for any followers
+	for (std::vector<MovingTarget *>::iterator i = getFollowers()->begin(); i != getFollowers()->end(); ++i)
+	{
+		(*i)->resetMeetPoint();
+	}
 	calculateSpeed();
 }
 
@@ -207,15 +212,24 @@ void MovingTarget::move()
 	calculateSpeed();
 	if (_dest != 0)
 	{
-		if (getDistance(_dest) > _speedRadian)
+		if (getDistance(_meetPointLon, _meetPointLat) > _speedRadian)
 		{
 			setLongitude(_lon + _speedLon);
 			setLatitude(_lat + _speedLat);
 		}
 		else
 		{
-			setLongitude(_dest->getLongitude());
-			setLatitude(_dest->getLatitude());
+			if (getDistance(_dest) > _speedRadian)
+			{
+				setLongitude(_meetPointLon);
+				setLatitude(_meetPointLat);
+			}
+			else
+			{
+				setLongitude(_dest->getLongitude());
+				setLatitude(_dest->getLatitude());
+			}
+			resetMeetPoint();
 		}
 	}
 }
@@ -240,7 +254,7 @@ void MovingTarget::calculateMeetPoint()
 		_meetPointLon = _lon;
 	}
 
-	if (!_dest || !Options::meetingPoint) return;
+	if (!_dest || !Options::meetingPoint || reachedDestination()) return;
 
 	MovingTarget *t = dynamic_cast<MovingTarget*>(_dest);
 	if (!t || !t->getDestination()) return;
