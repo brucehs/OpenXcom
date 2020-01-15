@@ -823,7 +823,7 @@ void BattlescapeState::btnUnitUpClick(Action *)
 {
 	if (playableUnitSelected() && _save->getPathfinding()->validateUpDown(_save->getSelectedUnit(), _save->getSelectedUnit()->getPosition(), Pathfinding::DIR_UP))
 	{
-		_battleGame->cancelCurrentAction();
+		_battleGame->cancelAllActions();
 		_battleGame->moveUpDown(_save->getSelectedUnit(), Pathfinding::DIR_UP);
 	}
 }
@@ -836,7 +836,7 @@ void BattlescapeState::btnUnitDownClick(Action *)
 {
 	if (playableUnitSelected() && _save->getPathfinding()->validateUpDown(_save->getSelectedUnit(), _save->getSelectedUnit()->getPosition(), Pathfinding::DIR_DOWN))
 	{
-		_battleGame->cancelCurrentAction();
+		_battleGame->cancelAllActions();
 		_battleGame->moveUpDown(_save->getSelectedUnit(), Pathfinding::DIR_DOWN);
 	}
 }
@@ -926,17 +926,7 @@ void BattlescapeState::btnInventoryClick(Action *)
 	if (playableUnitSelected()
 		&& (_save->getSelectedUnit()->hasInventory() || _save->getDebugMode()))
 	{
-		// clean up the waypoints
-		if (_battleGame->getCurrentAction()->type == BA_LAUNCH)
-		{
-			_battleGame->getCurrentAction()->waypoints.clear();
-			_battleGame->getMap()->getWaypoints()->clear();
-			showLaunchButton(false);
-		}
-
-		_battleGame->getPathfinding()->removePreview();
-		_battleGame->cancelCurrentAction(true);
-
+		_battleGame->cancelAllActions();
 		_game->pushState(new InventoryState(!_save->getDebugMode(), this));
 	}
 }
@@ -974,7 +964,10 @@ void BattlescapeState::btnNextSoldierClick(Action *)
 void BattlescapeState::btnNextStopClick(Action *)
 {
 	if (allowButtons())
+	{
 		selectNextPlayerUnit(true, true);
+		_map->refreshSelectorPosition();
+	}
 }
 
 /**
@@ -1003,7 +996,7 @@ void BattlescapeState::selectNextPlayerUnit(bool checkReselect, bool setReselect
 		BattleUnit *unit = _save->selectNextPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo(checkFOV);
 		if (unit) _map->getCamera()->centerOnPosition(unit->getPosition());
-		_battleGame->cancelCurrentAction();
+		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
 	}
@@ -1019,11 +1012,10 @@ void BattlescapeState::selectPreviousPlayerUnit(bool checkReselect, bool setRese
 {
 	if (allowButtons())
 	{
-		if (_battleGame->getCurrentAction()->type != BA_NONE) return;
 		BattleUnit *unit = _save->selectPreviousPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo();
 		if (unit) _map->getCamera()->centerOnPosition(unit->getPosition());
-		_battleGame->cancelCurrentAction();
+		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
 	}
@@ -1080,7 +1072,7 @@ void BattlescapeState::btnStatsClick(Action *action)
 {
 	if (playableUnitSelected())
 	{
-		bool b = true;
+		bool scroll = false;
 		if (SCROLL_TRIGGER == Options::battleEdgeScroll &&
 			SDL_MOUSEBUTTONUP == action->getDetails()->type && SDL_BUTTON_LEFT == action->getDetails()->button.button)
 		{
@@ -1092,19 +1084,13 @@ void BattlescapeState::btnStatsClick(Action *action)
 				|| (posY > (_map->getHeight() - Camera::SCROLL_BORDER) * action->getYScale()))
 				// To avoid handling this event as a click
 				// on the stats button when the mouse is on the scroll-border
-				b = false;
+				scroll = true;
 		}
-		// clean up the waypoints
-		if (_battleGame->getCurrentAction()->type == BA_LAUNCH)
+		if (!scroll)
 		{
-			_battleGame->getCurrentAction()->waypoints.clear();
-			_battleGame->getMap()->getWaypoints()->clear();
-			showLaunchButton(false);
+			_battleGame->cancelAllActions();
+			popup(new UnitInfoState(_save->getSelectedUnit(), this, false, false));
 		}
-
-		_battleGame->cancelCurrentAction(true);
-
-		if (b) popup(new UnitInfoState(_save->getSelectedUnit(), this, false, false));
 	}
 }
 

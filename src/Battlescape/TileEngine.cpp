@@ -999,7 +999,7 @@ int TileEngine::determineReactionType(BattleUnit *unit, BattleUnit *target)
 		unit->getTimeUnits() > unit->getActionTUs(BA_HIT, meleeWeapon) &&
 		(unit->getOriginalFaction() != FACTION_PLAYER ||
 		_save->getGeoscapeSave()->isResearched(meleeWeapon->getRules()->getRequirements())) &&
-		_save->isItemUsable(meleeWeapon->getRules()))
+		_save->isItemUsable(meleeWeapon))
 	{
 		return BA_HIT;
 	}
@@ -1016,7 +1016,7 @@ int TileEngine::determineReactionType(BattleUnit *unit, BattleUnit *target)
 		unit->getTimeUnits() > unit->getActionTUs(BA_SNAPSHOT, weapon)) &&
 		(unit->getOriginalFaction() != FACTION_PLAYER ||
 		_save->getGeoscapeSave()->isResearched(weapon->getRules()->getRequirements())) &&
-		_save->isItemUsable(weapon->getRules()))
+		_save->isItemUsable(weapon))
 	{
 		return BA_SNAPSHOT;
 	}
@@ -1067,7 +1067,7 @@ bool TileEngine::tryReaction(BattleUnit *unit, BattleUnit *target, int attackTyp
 				unit->setAIModule(ai);
 			}
 
-			if (action.weapon->getAmmoItem()->getRules()->getExplosionRadius() &&
+			if (action.type != BA_HIT && action.weapon->getAmmoItem()->getRules()->getExplosionRadius() &&
 				ai->explosiveEfficacy(action.target, unit, action.weapon->getAmmoItem()->getRules()->getExplosionRadius(), -1) == false)
 			{
 				action.targeting = false;
